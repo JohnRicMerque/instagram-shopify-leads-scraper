@@ -1,0 +1,9 @@
+node_modules
+storage
+!storage/key_value_stores
+!storage/key_value_stores/default
+!storage/key_value_stores/default/INPUT.json
+apify_storage
+.env
+*.log
+.DS_Store

@@ -1,0 +1,19 @@
+{
+    "actorOutputSchemaVersion": 1,
+    "title": "Output of Instagram Shopify Leads Scraper",
+    "description": "One scored lead per business in the dataset, plus a machine-readable run summary in the key-value store.",
+    "properties": {
+        "leads": {
+            "type": "string",
+            "title": "Leads",
+            "description": "All collected leads: store URL and platform, Shopify verification, public contacts, Instagram profile and activity metrics, and the 0-100 lead score.",
+            "template": "{{links.apiDefaultDatasetUrl}}/items"
+        },
+        "runSummary": {
+            "type": "string",
+            "title": "Run summary",
+            "description": "Counts of profiles discovered and processed, websites inspected, Shopify stores found, leads with email, duplicates removed, and the filtered-out breakdown.",
+            "template": "{{links.apiDefaultKeyValueStoreUrl}}/records/RUN-SUMMARY"
+        }
+    }
+}

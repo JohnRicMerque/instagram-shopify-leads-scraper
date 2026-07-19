@@ -1,0 +1,48 @@
+{
+    "actorSpecification": 1,
+    "fields": {},
+    "views": {
+        "leads": {
+            "title": "Leads",
+            "transformation": {
+                "fields": [
+                    "username",
+                    "fullName",
+                    "leadScore",
+                    "leadTier",
+                    "isShopify",
+                    "websitePlatform",
+                    "resolvedStoreUrl",
+                    "publicEmail",
+                    "publicPhone",
+                    "followersCount",
+                    "averageEngagementRate",
+                    "latestPostDate",
+                    "isActive",
+                    "category",
+                    "instagramUrl"
+                ]
+            },
+            "display": {
+                "component": "table",
+                "properties": {
+                    "username": { "label": "Username", "format": "text" },
+                    "fullName": { "label": "Business", "format": "text" },
+                    "leadScore": { "label": "Score", "format": "number" },
+                    "leadTier": { "label": "Tier", "format": "text" },
+                    "isShopify": { "label": "Shopify", "format": "boolean" },
+                    "websitePlatform": { "label": "Platform", "format": "text" },
+                    "resolvedStoreUrl": { "label": "Store URL", "format": "link" },
+                    "publicEmail": { "label": "Email", "format": "text" },
+                    "publicPhone": { "label": "Phone", "format": "text" },
+                    "followersCount": { "label": "Followers", "format": "number" },
+                    "averageEngagementRate": { "label": "Engagement %", "format": "number" },
+                    "latestPostDate": { "label": "Last post", "format": "date" },
+                    "isActive": { "label": "Active", "format": "boolean" },
+                    "category": { "label": "Category", "format": "text" },
+                    "instagramUrl": { "label": "Instagram", "format": "link" }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,9 @@
+node_modules
+storage
+apify_storage
+tests
+.git
+.gitignore
+*.log
+.env
+README.md

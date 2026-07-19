@@ -1,0 +1,16 @@
+{
+    "data": {
+        "user": {
+            "username": "minimalprofile",
+            "full_name": "",
+            "biography": "",
+            "is_verified": false,
+            "edge_followed_by": null,
+            "edge_follow": {},
+            "edge_owner_to_timeline_media": { "count": 0, "edges": [] },
+            "external_url": null,
+            "bio_links": []
+        }
+    },
+    "status": "ok"
+}

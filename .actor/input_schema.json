@@ -1,0 +1,146 @@
+{
+    "title": "Instagram Shopify Leads Scraper",
+    "description": "Provide at least ONE discovery source: search terms, hashtags, usernames, or profile URLs. Everything else is optional.",
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+        "searchTerms": {
+            "title": "Search terms (niche keywords)",
+            "type": "array",
+            "editor": "stringList",
+            "description": "Niche keywords used to discover Instagram business profiles, e.g. <b>skincare</b>, <b>streetwear</b>, <b>handmade jewelry</b>. Discovery automatically expands beyond literal name matches: it also tries commerce variants of each term, profiles Instagram suggests as related, and hashtags the discovered brands actually use.",
+            "prefill": ["skincare"]
+        },
+        "locations": {
+            "title": "Locations (optional)",
+            "type": "array",
+            "editor": "stringList",
+            "description": "Countries or cities combined with your search terms, e.g. <b>United Kingdom</b>, <b>London</b>, <b>Philippines</b>. Leave empty for worldwide discovery."
+        },
+        "hashtags": {
+            "title": "Hashtags (optional)",
+            "type": "array",
+            "editor": "stringList",
+            "description": "Instagram hashtags to discover profiles from, with or without the leading #, e.g. <b>skincarebrand</b>."
+        },
+        "usernames": {
+            "title": "Instagram usernames (optional)",
+            "type": "array",
+            "editor": "stringList",
+            "description": "Specific Instagram usernames to process directly, with or without the leading @. Also the best way to seed discovery: add 2-3 brands you like and the Actor finds similar ones via Instagram's own suggestions.",
+            "prefill": ["glowrecipe", "cocokind"]
+        },
+        "startUrls": {
+            "title": "Instagram profile URLs (optional)",
+            "type": "array",
+            "editor": "requestListSources",
+            "description": "Direct links to Instagram profiles, e.g. <b>https://www.instagram.com/examplebrand/</b>."
+        },
+        "maxResults": {
+            "title": "Leads to collect",
+            "type": "integer",
+            "description": "The run stops as soon as this many leads have been saved to the dataset. Discovery keeps searching (more result pages, related profiles, hashtags) until this target is reached or sources are exhausted. Start small to preview results, then scale up.",
+            "default": 10,
+            "prefill": 10,
+            "minimum": 1,
+            "maximum": 5000
+        },
+        "leadType": {
+            "title": "Which businesses to keep",
+            "type": "string",
+            "editor": "select",
+            "enum": ["all", "shopify", "instagram"],
+            "enumTitles": [
+                "All businesses",
+                "Shopify stores only",
+                "With Instagram only"
+            ],
+            "default": "all",
+            "description": "Keep every business found, only confirmed Shopify stores, or only businesses with an Instagram account. Every row always reports both sides, so you can also filter the dataset afterwards."
+        },
+        "onlyActiveProfiles": {
+            "title": "Only active profiles",
+            "type": "boolean",
+            "description": "Only keep leads whose Instagram profile posted within the last 30 days.",
+            "default": false,
+            "sectionCaption": "Filters",
+            "sectionDescription": "Optional filters applied before leads are saved. Filtered-out counts are reported in the run summary."
+        },
+        "requireEmail": {
+            "title": "Require public email",
+            "type": "boolean",
+            "description": "Only keep leads that expose a public business email address.",
+            "default": false
+        },
+        "skipPreviousLeads": {
+            "title": "Only new leads",
+            "type": "boolean",
+            "description": "Skip businesses already exported by any previous run of this Actor on your account. Perfect for weekly prospecting runs that should only return fresh leads.",
+            "default": false
+        },
+        "resetLeadsHistory": {
+            "title": "Reset lead memory",
+            "type": "boolean",
+            "description": "Forget every previously exported business before this run starts. Use this to rebuild a full list from scratch after using \"Only new leads\".",
+            "default": false
+        },
+        "excludedUsernames": {
+            "title": "Excluded usernames",
+            "type": "array",
+            "editor": "stringList",
+            "description": "Instagram usernames to skip (e.g. your own accounts or existing customers)."
+        },
+        "excludedDomains": {
+            "title": "Excluded website domains",
+            "type": "array",
+            "editor": "stringList",
+            "description": "Website domains to skip, e.g. <b>examplebrand.com</b>."
+        },
+        "discoveryMode": {
+            "title": "Discovery engine",
+            "type": "string",
+            "editor": "select",
+            "enum": ["auto", "shopify-first", "instagram-first", "both"],
+            "enumTitles": [
+                "Auto (recommended)",
+                "Shopify-first: find stores on the web, then their Instagram",
+                "Instagram-first: find profiles, then check their websites",
+                "Both pipelines combined"
+            ],
+            "default": "auto",
+            "description": "How search terms discover leads. <b>Auto</b> runs both pipelines. Shopify-first finds storefronts on the web and verifies them before touching Instagram (sidesteps Instagram rate limits; strongly favors small independent brands); Instagram-first finds profiles and then checks their websites.",
+            "sectionCaption": "Advanced",
+            "sectionDescription": "Defaults work well for most runs."
+        },
+        "googleApiKey": {
+            "title": "Google API key (optional)",
+            "type": "string",
+            "editor": "textfield",
+            "isSecret": true,
+            "description": "Optional Google Custom Search API key for deeper, more stable discovery (100 free queries per day per key). Create one at <a href='https://developers.google.com/custom-search/v1/introduction' target='_blank'>developers.google.com</a>. Requires the search engine ID below."
+        },
+        "googleCseId": {
+            "title": "Google search engine ID (optional)",
+            "type": "string",
+            "editor": "textfield",
+            "isSecret": true,
+            "description": "The Programmable Search Engine ID (cx) paired with your API key. Create a search engine that searches the entire web at <a href='https://programmablesearchengine.google.com' target='_blank'>programmablesearchengine.google.com</a>."
+        },
+        "instagramSessionCookies": {
+            "title": "Instagram session cookies (optional)",
+            "type": "string",
+            "editor": "textarea",
+            "isSecret": true,
+            "description": "Optional <code>Cookie</code> header value from a logged-in Instagram browser session (e.g. <code>sessionid=...; csrftoken=...</code>). NOT required. It only improves hashtag discovery coverage and reduces login walls. Use a throwaway account, never your personal one."
+        },
+        "proxyConfiguration": {
+            "title": "Proxy configuration",
+            "type": "object",
+            "editor": "proxy",
+            "description": "Instagram blocks its profile API for most datacenter IPs (HTTP 401), so <b>residential</b> proxies are the default and strongly recommended. Switching to datacenter proxies is cheaper but the Actor will fall back to limited HTML profile data.",
+            "default": { "useApifyProxy": true, "apifyProxyGroups": ["RESIDENTIAL"] },
+            "prefill": { "useApifyProxy": true, "apifyProxyGroups": ["RESIDENTIAL"] }
+        }
+    },
+    "required": []
+}

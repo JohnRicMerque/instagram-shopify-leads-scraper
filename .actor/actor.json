@@ -1,0 +1,19 @@
+{
+    "actorSpecification": 1,
+    "name": "instagram-shopify-leads-scraper",
+    "title": "Instagram Shopify Leads Scraper",
+    "description": "Type a niche like \"skincare\" and get a ready-to-use lead list: Instagram brands that sell online, their store links (Shopify verified), public emails and phones, follower and engagement stats, and a 0-100 lead score. One clean row per business, ready to export to CSV, Excel, or JSON for outreach.",
+    "version": "1.0",
+    "buildTag": "latest",
+    "meta": {
+        "templateId": "js-empty"
+    },
+    "input": "./input_schema.json",
+    "output": "./output_schema.json",
+    "storages": {
+        "dataset": "./dataset_schema.json",
+        "keyValueStore": "./key_value_store_schema.json"
+    },
+    "dockerfile": "../Dockerfile",
+    "readme": "../README.md"
+}

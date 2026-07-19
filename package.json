@@ -1,0 +1,19 @@
+{
+    "name": "instagram-shopify-leads-scraper",
+    "version": "1.0.0",
+    "type": "module",
+    "description": "Discover active Instagram businesses, detect their Shopify stores, extract public contact details, and generate qualified sales leads.",
+    "engines": {
+        "node": ">=20.0.0"
+    },
+    "dependencies": {
+        "apify": "^3.2.6",
+        "cheerio": "^1.0.0",
+        "crawlee": "^3.11.5"
+    },
+    "scripts": {
+        "start": "node src/main.js",
+        "test": "node --test \"tests/**/*.test.js\""
+    },
+    "license": "ISC"
+}

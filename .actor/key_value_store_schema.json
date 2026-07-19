@@ -1,0 +1,13 @@
+{
+    "actorKeyValueStoreSchemaVersion": 1,
+    "title": "Key-value store of Instagram Shopify Leads Scraper",
+    "description": "Run outputs stored outside the dataset.",
+    "collections": {
+        "runSummary": {
+            "title": "Run summary",
+            "description": "Machine-readable statistics of the finished run: profiles discovered and processed, websites inspected, Shopify stores found, leads saved and with email, duplicates removed, failed requests, and the filtered-out breakdown.",
+            "key": "RUN-SUMMARY",
+            "contentTypes": ["application/json"]
+        }
+    }
+}
