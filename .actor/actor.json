@@ -5,6 +5,8 @@
     "description": "Type a niche like \"skincare\" and get a ready-to-use lead list: Instagram brands that sell online, their store links (Shopify verified), public emails and phones, follower and engagement stats, and a 0-100 lead score. One clean row per business, ready to export to CSV, Excel, or JSON for outreach.",
     "version": "1.0",
     "buildTag": "latest",
+    "minMemoryMbytes": 512,
+    "maxMemoryMbytes": 2048,
     "meta": {
         "templateId": "js-empty"
     },

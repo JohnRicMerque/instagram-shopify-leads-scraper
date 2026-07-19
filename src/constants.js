@@ -19,6 +19,23 @@ export const LABELS = {
     GOOGLE_SEARCH: 'GOOGLE_SEARCH',
 };
 
+// Request labels that must go through the user-configured proxy pool
+// (RESIDENTIAL by default): Instagram rejects datacenter IPs outright and
+// search engines captcha-wall them. Everything else (store pages,
+// products.json, contact pages) rides cheap datacenter IPs — residential
+// traffic is billed per GB at roughly 40x the datacenter rate, and store
+// pages are the bulk of the bytes.
+export const PREMIUM_PROXY_LABELS = new Set([
+    LABELS.PROFILE, LABELS.PROFILE_HTML, LABELS.HASHTAG, LABELS.TOPSEARCH,
+    LABELS.SEARCH, LABELS.STORE_SEARCH,
+]);
+
+// Page size for the /products.json confirmation probe. It only needs to
+// prove the Shopify products shape and give a rough catalog size; the API
+// maximum of 250 returns multi-MB payloads on big stores for no extra
+// signal. productCount is therefore capped at this value ("30+" stores).
+export const PRODUCTS_JSON_LIMIT = 30;
+
 // Instagram accounts of platforms/tools, not businesses. Store footers
 // often link these ("powered by Shopify" badge -> instagram.com/shopify),
 // so they must never be matched as a store's own account.

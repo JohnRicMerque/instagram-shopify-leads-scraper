@@ -27,7 +27,7 @@ By default every lead is a **verified Shopify store with a matched Instagram acc
 - **Only new leads**: repeat runs skip everything you already exported. Ideal for weekly prospecting. **Reset lead memory** starts the memory over. Both are checkboxes in the **Filters** section of the input form.
 - **Seed usernames**: add 2–3 Instagram accounts of brands you like into the **Instagram usernames** field on the main form, and the Actor finds similar brands via Instagram's own suggestions.
 - **Google API key**: plug your own free Google Custom Search key and engine ID into the **Google API key** and **Google search engine ID** fields in the **Advanced** section for deeper, more stable discovery. The field descriptions link to where you create both.
-- **Proxies**: keep the default residential proxy, preset in **Proxy configuration** at the bottom of the **Advanced** section. Instagram blocks most datacenter IPs; on those the Actor continues with reduced profile data.
+- **Proxies**: keep the default residential proxy, preset in **Proxy configuration** at the bottom of the **Advanced** section. Instagram blocks most datacenter IPs; on those the Actor continues with reduced profile data. To keep costs low, residential IPs are only used where they are needed (Instagram and search engines); ordinary store pages are fetched through cheap datacenter IPs automatically.
 - **Instagram cookies** (optional): paste a throwaway account's session cookie into **Instagram session cookies** in the **Advanced** section to improve Instagram coverage. Never required.
 
 ## Input
@@ -109,7 +109,7 @@ One dataset row per business. Fields that could not be determined are `null` (ne
     "hasOnlineStore": true,
     "websiteReachable": true,
     "websiteUsesHttps": true,
-    "productCount": 42,
+    "productCount": 28,
     "detectedApps": ["Klaviyo", "Judge.me"],
     "storeCurrency": "GBP",
     "publicEmail": "hello@examplebrand.com",
@@ -165,6 +165,7 @@ Tiers: High 75–100, Medium 45–74, Low 0–44. Every row includes the reasons
 - Only publicly accessible information is collected. No private profiles, stories, DMs, or follower lists.
 - Instagram limits public data: activity metrics come from the up-to-12 recent posts it exposes, and some profiles may return limited data (noted in the row's `error` field).
 - Store-first leads without an Instagram link have empty Instagram columns; profiles without a website have empty store columns.
+- `productCount` comes from the store's public product feed and is capped at 30, so a value of 30 means 30 or more products.
 - You are responsible for using the data lawfully: comply with Instagram's terms, GDPR/CCPA, and anti-spam laws in your outreach.
 
 ## Troubleshooting

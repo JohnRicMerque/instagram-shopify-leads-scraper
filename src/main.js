@@ -16,7 +16,7 @@
  * and websites. No browser is launched.
  */
 import { Actor, log } from 'apify';
-import { CheerioCrawler, sleep } from 'crawlee';
+import { CheerioCrawler, ProxyConfiguration, sleep } from 'crawlee';
 
 import { parseInput } from './input.js';
 import {
@@ -24,6 +24,7 @@ import {
     GENERIC_HASHTAGS, HASHTAG_EXPAND_THRESHOLD, MAX_HASHTAG_EXPANSIONS,
     MAX_RELATED_PER_PROFILE, EXPANSION_MAX_FOLLOWERS,
     HISTORY_STORE_NAME, HISTORY_KEY, PLATFORM_IG_ACCOUNTS,
+    PREMIUM_PROXY_LABELS, PRODUCTS_JSON_LIMIT,
 } from './constants.js';
 import {
     buildInitialRequests, profileRequest, hashtagRequest, buildHashtagFallbackRequests,
@@ -131,13 +132,37 @@ async function persistHistory() {
 }
 Actor.on('persistState', () => persistHistory().catch(() => {}));
 
-let proxyConfiguration;
+// Two proxy pools. The user-configured one (RESIDENTIAL by default) is
+// reserved for the hosts that actually block datacenter IPs — Instagram and
+// the search engines. Store websites, products.json probes, and contact
+// pages go through plain datacenter proxy instead: residential is billed
+// per GB and those ordinary pages are where most of the bytes are.
+let premiumProxy;
 try {
-    proxyConfiguration = await Actor.createProxyConfiguration(input.proxyConfiguration);
+    premiumProxy = await Actor.createProxyConfiguration(input.proxyConfiguration);
 } catch (error) {
     log.warning(`Proxy configuration failed (${error.message}) - falling back to standard Apify Proxy.`);
-    proxyConfiguration = await Actor.createProxyConfiguration({ useApifyProxy: true });
+    premiumProxy = await Actor.createProxyConfiguration({ useApifyProxy: true });
 }
+let datacenterProxy;
+try {
+    datacenterProxy = await Actor.createProxyConfiguration({ useApifyProxy: true });
+} catch {
+    datacenterProxy = premiumProxy;
+}
+
+const proxyConfiguration = (premiumProxy || datacenterProxy)
+    ? new ProxyConfiguration({
+        newUrlFunction: (sessionId, { request } = {}) => {
+            const label = request?.userData?.label;
+            // Retries escalate to the premium pool, so the rare store site
+            // that filters datacenter IPs still gets its lead on attempt two.
+            const usePremium = !label || PREMIUM_PROXY_LABELS.has(label) || (request?.retryCount ?? 0) > 0;
+            const pool = usePremium ? (premiumProxy ?? datacenterProxy) : (datacenterProxy ?? premiumProxy);
+            return pool ? pool.newUrl(sessionId) : null;
+        },
+    })
+    : undefined;
 
 // ------------------------------------------------- lead lifecycle helpers
 
@@ -590,7 +615,7 @@ async function handleStoreCheck({ request, response, $, body, crawler, log: rlog
     if (platform.isShopify || platform.inconclusiveShopify) {
         trackLeadRequest(lead);
         await crawler.addRequests([{
-            url: new URL('/products.json?limit=250', finalUrl).href,
+            url: new URL(`/products.json?limit=${PRODUCTS_JSON_LIMIT}`, finalUrl).href,
             label: LABELS.PRODUCTS_JSON,
             uniqueKey: `products:${leadKey}:${canonicalUrl(finalUrl)}`,
             userData: { label: LABELS.PRODUCTS_JSON, username: leadKey, candidateUrl: candidate.finalUrl },
@@ -802,7 +827,7 @@ async function inspectWebsite({ request, response, $, body, crawler, log: rlog }
 
     // Confirmation / product-count probe via the public products.json endpoint.
     if (platform.isShopify || platform.inconclusiveShopify) {
-        const probeUrl = new URL('/products.json?limit=250', finalUrl).href;
+        const probeUrl = new URL(`/products.json?limit=${PRODUCTS_JSON_LIMIT}`, finalUrl).href;
         trackLeadRequest(lead);
         await crawler.addRequests([{
             url: probeUrl,
@@ -864,7 +889,7 @@ async function handleProductsJson({ request, json, log: rlog }) {
                     candidate.platform = 'Shopify';
                     candidate.shopifyConfidence = Math.min(1, (candidate.shopifyConfidence ?? 0) + 0.5);
                     markShopifyFound(lead);
-                    rlog.info(`@${username}: Shopify confirmed via products.json (${productCount} products)`);
+                    rlog.info(`@${username}: Shopify confirmed via products.json (${productCount}${productCount >= PRODUCTS_JSON_LIMIT ? '+' : ''} products)`);
                 }
                 candidate.shopifySignals = [
                     ...(candidate.shopifySignals ?? []),
