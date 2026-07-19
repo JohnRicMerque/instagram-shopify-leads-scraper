@@ -49,14 +49,15 @@
             "title": "Which businesses to keep",
             "type": "string",
             "editor": "select",
-            "enum": ["all", "shopify", "instagram"],
+            "enum": ["shopify-instagram", "instagram", "shopify", "all"],
             "enumTitles": [
-                "All businesses",
-                "Shopify stores only",
-                "With Instagram only"
+                "Shopify stores that have Instagram (recommended)",
+                "Has Instagram (Shopify not required)",
+                "Verified Shopify store (Instagram not required)",
+                "All businesses (keep everything found)"
             ],
-            "default": "all",
-            "description": "Keep every business found, only confirmed Shopify stores, or only businesses with an Instagram account. Every row always reports both sides, so you can also filter the dataset afterwards."
+            "default": "shopify-instagram",
+            "description": "What a business must have to become a lead. The default keeps only verified Shopify stores with a matched Instagram account. Looser options return more leads; every row always reports both sides (<code>isShopify</code>, <code>instagramUrl</code>), so you can also keep everything and filter the dataset afterwards."
         },
         "onlyActiveProfiles": {
             "title": "Only active profiles",

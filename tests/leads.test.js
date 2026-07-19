@@ -4,7 +4,8 @@ import { createLead, chooseBestCandidate, buildRow, filterRow } from '../src/lea
 import { parseInput } from '../src/input.js';
 
 const NOW = Date.parse('2026-07-17T00:00:00.000Z');
-const input = parseInput({ searchTerms: ['skincare'], minimumFollowers: 500, maximumFollowers: 500000 });
+// Permissive baseline: keep everything, filter tests opt into stricter modes.
+const input = parseInput({ searchTerms: ['skincare'], leadType: 'all', minimumFollowers: 500, maximumFollowers: 500000 });
 
 function shopifyCandidate(overrides = {}) {
     return {
@@ -150,6 +151,6 @@ test('filterRow enforces user filters', () => {
     const emailInput = parseInput({ searchTerms: ['x'], requireEmail: true });
     assert.equal(filterRow({ ...row, publicEmail: null }, emailInput), 'noEmail');
 
-    const strictInput = parseInput({ searchTerms: ['x'], locations: ['Iceland'], strictLocationFilter: true, requireShopify: false });
+    const strictInput = parseInput({ searchTerms: ['x'], leadType: 'all', locations: ['Iceland'], strictLocationFilter: true });
     assert.equal(filterRow({ ...row, isShopify: false }, strictInput), 'location');
 });

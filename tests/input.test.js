@@ -22,7 +22,8 @@ test('applies defaults and clamps numeric values', () => {
     assert.equal(input.maxResults, 5000);
     assert.equal(input.recentPostsToAnalyze, 12);
     assert.equal(input.minimumFollowers, 0);
-    assert.equal(input.requireShopify, false, 'Shopify-only filter is opt-in');
+    assert.equal(input.requireShopify, true, 'default lead type requires a Shopify store');
+    assert.equal(input.requireInstagram, true, 'default lead type requires Instagram');
     assert.equal(input.expandDiscovery, true, 'discovery expansion is on by default');
     assert.equal(input.includeContactDetails, true);
     assert.equal(input.maxConcurrency, 5);
@@ -40,33 +41,40 @@ test('technical fields remain overridable via API input', () => {
 });
 
 test('leadType maps to the right filters', () => {
-    const all = parseInput({ searchTerms: ['x'] });
-    assert.equal(all.leadType, 'all');
-    assert.equal(all.requireShopify, false);
-    assert.equal(all.requireInstagram, false);
+    // Default: the core promise — Shopify store AND Instagram account.
+    const def = parseInput({ searchTerms: ['x'] });
+    assert.equal(def.leadType, 'shopify-instagram');
+    assert.equal(def.requireShopify, true);
+    assert.equal(def.requireInstagram, true);
+    assert.equal(def.discoveryMode, 'both', 'Instagram requirement keeps both pipelines running');
 
     const shopify = parseInput({ searchTerms: ['x'], leadType: 'shopify' });
     assert.equal(shopify.requireShopify, true);
-    assert.equal(shopify.discoveryMode, 'shopify-first', 'shopify leads use store-first discovery');
+    assert.equal(shopify.requireInstagram, false);
+    assert.equal(shopify.discoveryMode, 'shopify-first', 'Shopify-only leads use store-first discovery');
 
     const instagram = parseInput({ searchTerms: ['x'], leadType: 'instagram' });
     assert.equal(instagram.requireInstagram, true);
     assert.equal(instagram.requireShopify, false);
 
-    assert.equal(parseInput({ searchTerms: ['x'], leadType: 'bogus' }).leadType, 'all');
+    const all = parseInput({ searchTerms: ['x'], leadType: 'all' });
+    assert.equal(all.requireShopify, false);
+    assert.equal(all.requireInstagram, false);
+
+    assert.equal(parseInput({ searchTerms: ['x'], leadType: 'bogus' }).leadType, 'shopify-instagram');
     assert.equal(parseInput({ searchTerms: ['x'], resetLeadsHistory: true }).resetLeadsHistory, true);
     assert.equal(parseInput({ searchTerms: ['x'] }).includeIncompleteLeads, false);
     assert.equal(parseInput({ searchTerms: ['x'], includeIncompleteLeads: true }).includeIncompleteLeads, true);
 });
 
-test('discoveryMode: auto resolves from requireShopify, explicit values honored', () => {
-    // Default: requireShopify off -> both pipelines.
+test('discoveryMode: auto resolves from lead requirements, explicit values honored', () => {
+    // Default (Shopify + Instagram required) -> both pipelines contribute.
     assert.equal(parseInput({ searchTerms: ['x'] }).discoveryMode, 'both');
-    // Shopify-only runs go store-first.
-    assert.equal(parseInput({ searchTerms: ['x'], requireShopify: true }).discoveryMode, 'shopify-first');
+    // Shopify-only (Instagram not required) is served best by store-first alone.
+    assert.equal(parseInput({ searchTerms: ['x'], leadType: 'shopify' }).discoveryMode, 'shopify-first');
     // Explicit choices win over auto.
     assert.equal(parseInput({ searchTerms: ['x'], discoveryMode: 'instagram-first' }).discoveryMode, 'instagram-first');
-    assert.equal(parseInput({ searchTerms: ['x'], requireShopify: true, discoveryMode: 'both' }).discoveryMode, 'both');
+    assert.equal(parseInput({ searchTerms: ['x'], leadType: 'shopify', discoveryMode: 'both' }).discoveryMode, 'both');
     // Invalid values fall back to auto resolution.
     assert.equal(parseInput({ searchTerms: ['x'], discoveryMode: 'bogus' }).discoveryMode, 'both');
 });

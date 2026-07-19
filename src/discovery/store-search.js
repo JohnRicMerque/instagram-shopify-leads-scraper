@@ -13,14 +13,22 @@ import {
     LABELS, SEARCH_ENGINE_BUILDERS, MAX_SEARCH_PAGES, NON_STORE_DOMAINS, LINK_IN_BIO_HOSTS,
 } from '../constants.js';
 import { toUrl, unwrapRedirectUrl, normalizeDomain } from '../utils/normalize.js';
+import { buildQueryVariants } from './search-engine.js';
 
-/** Search queries that surface Shopify storefronts in a niche. */
+/**
+ * Search queries that surface Shopify storefronts in a niche. Each term
+ * variant (term, "term shop", "term brand") is crossed with both Shopify
+ * footprints, so a single niche keyword yields up to six distinct queries
+ * per engine; this is what keeps strict runs able to fill their quota.
+ */
 export function buildStoreQueries(term, location) {
     const loc = location ? ` ${location}` : '';
-    return [
-        `"powered by shopify" ${term}${loc}`,
-        `site:myshopify.com ${term}${loc}`,
-    ];
+    const queries = [];
+    for (const variant of buildQueryVariants(term)) {
+        queries.push(`"powered by shopify" ${variant}${loc}`);
+        queries.push(`site:myshopify.com ${variant}${loc}`);
+    }
+    return queries;
 }
 
 function storeSearchRequest(engine, query, source, page = 1) {

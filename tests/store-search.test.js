@@ -6,21 +6,21 @@ import {
 } from '../src/discovery/store-search.js';
 import { SEARCH_ENGINE_BUILDERS, MAX_SEARCH_PAGES } from '../src/constants.js';
 
-test('buildStoreQueries targets Shopify storefront footprints', () => {
-    assert.deepEqual(buildStoreQueries('skincare', 'United Kingdom'), [
-        '"powered by shopify" skincare United Kingdom',
-        'site:myshopify.com skincare United Kingdom',
-    ]);
-    assert.deepEqual(buildStoreQueries('jewelry', ''), [
-        '"powered by shopify" jewelry',
-        'site:myshopify.com jewelry',
-    ]);
+test('buildStoreQueries crosses term variants with Shopify footprints', () => {
+    const queries = buildStoreQueries('skincare', 'United Kingdom');
+    // 3 variants (skincare, skincare shop, skincare brand) x 2 footprints.
+    assert.equal(queries.length, 6);
+    assert.ok(queries.includes('"powered by shopify" skincare United Kingdom'));
+    assert.ok(queries.includes('site:myshopify.com skincare United Kingdom'));
+    assert.ok(queries.includes('site:myshopify.com skincare shop United Kingdom'));
+    // Terms already containing "brands" get fewer variants.
+    assert.equal(buildStoreQueries('skincare brands', '').length, 4);
 });
 
 test('buildStoreSearchRequests fans out across all engines with source metadata', () => {
     const requests = buildStoreSearchRequests(['skincare'], []);
     const engineCount = Object.keys(SEARCH_ENGINE_BUILDERS).length;
-    assert.equal(requests.length, 2 * engineCount);
+    assert.equal(requests.length, 6 * engineCount);
     for (const req of requests) {
         assert.equal(req.userData.label, 'STORE_SEARCH');
         assert.equal(req.userData.source.discoveryMethod, 'shopify-first');

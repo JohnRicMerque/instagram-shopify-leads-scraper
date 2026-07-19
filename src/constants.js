@@ -19,6 +19,16 @@ export const LABELS = {
     GOOGLE_SEARCH: 'GOOGLE_SEARCH',
 };
 
+// Instagram accounts of platforms/tools, not businesses. Store footers
+// often link these ("powered by Shopify" badge -> instagram.com/shopify),
+// so they must never be matched as a store's own account.
+export const PLATFORM_IG_ACCOUNTS = new Set([
+    'shopify', 'shopifyplus', 'shopify_partners', 'instagram', 'facebook',
+    'meta', 'wix', 'squarespace', 'woocommerce', 'bigcommerce', 'webflow',
+    'etsy', 'amazon', 'google', 'apple', 'microsoft', 'paypal', 'stripe',
+    'klarna', 'afterpay', 'klaviyo', 'mailchimp', 'canva', 'shop',
+]);
+
 // Named key-value store shared across all runs of this Actor on the same
 // account — powers the "only new leads" cross-run deduplication.
 export const HISTORY_STORE_NAME = 'instagram-shopify-leads-history';

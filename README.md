@@ -13,17 +13,17 @@ One row per business, streamed into the dataset while the run is going:
 - **Instagram**: profile, follower count, latest post date, engagement rate, recent hashtags
 - **Lead score**: transparent 0–100 score with plain-language reasons, tiered High / Medium / Low
 
-Every business found becomes a lead, with or without Shopify and with or without Instagram. Each row reports both sides, so you can slice the list any way you need. See the full sample row in [Output](#output) below.
+By default every lead is a **verified Shopify store with a matched Instagram account**. Prefer volume over strictness? One dropdown loosens it, all the way to keeping every business found. Each row reports both sides either way, so you can slice the list any way you need. See the full sample row in [Output](#output) below.
 
 ## How to use
 
 1. Enter **search terms** (e.g. `skincare`, `handmade jewelry`), optionally with locations. Hashtags, usernames, or profile URLs work too.
-2. Pick **how many leads to collect** and **which businesses to keep**: all, Shopify stores only, or with Instagram only.
+2. Pick **how many leads to collect** and **which businesses to keep** (default: Shopify stores that have Instagram).
 3. Run. Export from the dataset when done (or while it runs).
 
 ### Options worth knowing
 
-- **Which businesses to keep** (main form): **All businesses** returns the most leads, including stores without Instagram and profiles on other platforms, so you can filter later. **Shopify stores only** returns fewer but fully qualified leads (every row is a verified Shopify store) and switches discovery to store-first, which is faster and more reliable. **With Instagram only** keeps only leads with a matched Instagram profile, so expect fewer rows than All but every lead is reachable through DMs and comments.
+- **Which businesses to keep** (main form): **Shopify stores that have Instagram** (default) returns the fewest but best leads; every row is a verified store you can also reach through DMs. **Has Instagram** adds businesses on other platforms or with no store yet, ideal if you sell web services. **Verified Shopify store** adds stores without an Instagram link and uses the faster store-first discovery. **All businesses** returns the most rows and lets you filter the dataset yourself. Rule of thumb: stricter choice = fewer, better leads; looser choice = more rows to sift.
 - **Only new leads**: repeat runs skip everything you already exported. Ideal for weekly prospecting. **Reset lead memory** starts the memory over. Both are checkboxes in the **Filters** section of the input form.
 - **Seed usernames**: add 2–3 Instagram accounts of brands you like into the **Instagram usernames** field on the main form, and the Actor finds similar brands via Instagram's own suggestions.
 - **Google API key**: plug your own free Google Custom Search key and engine ID into the **Google API key** and **Google search engine ID** fields in the **Advanced** section for deeper, more stable discovery. The field descriptions link to where you create both.
@@ -42,7 +42,7 @@ Only one discovery source is required: search terms, hashtags, usernames, or pro
     "usernames": ["examplebrand"],
     "startUrls": [{ "url": "https://www.instagram.com/examplebrand/" }],
     "maxResults": 10,
-    "leadType": "all",
+    "leadType": "shopify-instagram",
     "onlyActiveProfiles": false,
     "requireEmail": false,
     "skipPreviousLeads": false,
@@ -60,7 +60,7 @@ Only one discovery source is required: search terms, hashtags, usernames, or pro
 | `hashtags` | array | none | Instagram hashtags, with or without `#`. |
 | `usernames` / `startUrls` | array | none | Specific Instagram accounts to process (also great as similarity seeds). |
 | `maxResults` | integer | 10 | Stop after saving this many leads. |
-| `leadType` | select | `all` | `all`, `shopify` (confirmed Shopify stores only), or `instagram` (with Instagram only). |
+| `leadType` | select | `shopify-instagram` | `shopify-instagram` (verified Shopify store AND Instagram), `instagram` (Instagram, any platform), `shopify` (Shopify, Instagram optional), or `all` (keep everything). |
 | `onlyActiveProfiles` | boolean | false | Require a post within the last 30 days. |
 | `requireEmail` | boolean | false | Require a public email. |
 | `skipPreviousLeads` | boolean | false | Only return leads never exported by a previous run. |
@@ -172,7 +172,7 @@ Tiers: High 75–100, Medium 45–74, Low 0–44. Every row includes the reasons
 | Symptom | Fix |
 |---|---|
 | Many `401` warnings in the log | Instagram is blocking your proxy IPs. Keep RESIDENTIAL proxies (the default); the run still continues with reduced profile data. |
-| Fewer leads than requested | The end-of-run log shows a filtered-out breakdown explaining exactly why. Broaden search terms or set "Which businesses to keep" to All. |
+| Fewer leads than requested | Expected with the strict default (Shopify + Instagram). The end-of-run log shows a filtered-out breakdown; loosen "Which businesses to keep" or broaden search terms for more rows. |
 | Repeat run returns nothing | "Only new leads" is on and everything was already exported. Turn it off or enable "Reset lead memory". |
 | Results feel too literal to the keyword | Add 2–3 seed usernames of brands you like; similar-brand discovery does the rest. |
 

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Instagram Shopify Leads Scraper — main orchestration.
  *
  * Pipeline: discovery (search engines / hashtags / direct inputs)
@@ -23,7 +23,7 @@ import {
     LABELS, IG_APP_ID, IG_PROFILE_URL, RUN_SUMMARY_KEY,
     GENERIC_HASHTAGS, HASHTAG_EXPAND_THRESHOLD, MAX_HASHTAG_EXPANSIONS,
     MAX_RELATED_PER_PROFILE, EXPANSION_MAX_FOLLOWERS,
-    HISTORY_STORE_NAME, HISTORY_KEY,
+    HISTORY_STORE_NAME, HISTORY_KEY, PLATFORM_IG_ACCOUNTS,
 } from './constants.js';
 import {
     buildInitialRequests, profileRequest, hashtagRequest, buildHashtagFallbackRequests,
@@ -79,6 +79,8 @@ const state = await Actor.useState('STATE', {
     apiBlocks: 0,
     apiOks: 0,
     htmlModeAnnounced: false,
+    // Pay-per-event: set when the run's spending cap is reached.
+    chargeLimitReached: false,
     counters: {
         profilesDiscovered: 0,
         profilesProcessed: 0,
@@ -109,13 +111,14 @@ counters.storeCandidatesRejected ??= 0;
 counters.storeCandidatesOffTopic ??= 0;
 counters.storesWithoutInstagram ??= 0;
 counters.incompleteLeadsSkipped ??= 0;
+state.chargeLimitReached ??= false;
 
 // Cross-run lead history (named store shared by all runs of this Actor).
 // Always recorded; only filtered on when `skipPreviousLeads` is enabled.
 const historyStore = await Actor.openKeyValueStore(HISTORY_STORE_NAME);
 let exportedHistory = (await historyStore.getValue(HISTORY_KEY)) ?? {};
 if (input.resetLeadsHistory && Object.keys(exportedHistory).length) {
-    log.info(`Lead memory reset: forgot ${Object.keys(exportedHistory).length} remembered keys — `
+    log.info(`Lead memory reset: forgot ${Object.keys(exportedHistory).length} remembered keys - `
         + 'previously exported businesses can appear again.');
     exportedHistory = {};
     await historyStore.setValue(HISTORY_KEY, exportedHistory);
@@ -132,7 +135,7 @@ let proxyConfiguration;
 try {
     proxyConfiguration = await Actor.createProxyConfiguration(input.proxyConfiguration);
 } catch (error) {
-    log.warning(`Proxy configuration failed (${error.message}) — falling back to standard Apify Proxy.`);
+    log.warning(`Proxy configuration failed (${error.message}) - falling back to standard Apify Proxy.`);
     proxyConfiguration = await Actor.createProxyConfiguration({ useApifyProxy: true });
 }
 
@@ -153,7 +156,7 @@ async function enqueueProfile(crawler, username, source) {
     if (!username || state.leads[username]) return false;
     if (input.excludedUsernames.has(username)) return false;
     if (state.enqueuedProfiles >= input.discoveryCap) return false;
-    if (state.pushedCount >= input.maxResults) return false;
+    if (state.pushedCount >= input.maxResults || state.chargeLimitReached) return false;
     state.leads[username] = createLead(username, source);
     state.enqueuedProfiles += 1;
     counters.profilesDiscovered += 1;
@@ -161,7 +164,7 @@ async function enqueueProfile(crawler, username, source) {
     if (instagramApiLooksBlocked()) {
         if (!state.htmlModeAnnounced) {
             state.htmlModeAnnounced = true;
-            log.warning('Instagram profile API is blocked from the current IP pool — '
+            log.warning('Instagram profile API is blocked from the current IP pool - '
                 + 'switching new profiles to HTML pages (reduced data). '
                 + 'Use RESIDENTIAL proxies or provide session cookies for full profile data.');
         }
@@ -200,11 +203,17 @@ async function finalizeLead(lead, { force = false } = {}) {
         // is a valid business lead even without Instagram profile data.
         const hasVerifiedStore = lead.websiteCandidates.some((c) => c.isShopify || c.hasOnlineStore);
         if (!hasVerifiedStore) {
-            // Profiles the user explicitly asked for get an error row;
-            // profiles we discovered ourselves are just counted as skipped.
-            if (lead.source?.discoveryMethod === 'direct' && state.errorRowsPushed < 100) {
-                state.errorRowsPushed += 1;
-                await Actor.pushData(buildRow(lead, input));
+            // Profiles the user explicitly asked for get an error row, but
+            // only when the run keeps everything: a strict Shopify/Instagram
+            // run must never contain unverified rows.
+            if (lead.source?.discoveryMethod === 'direct') {
+                if ((input.leadType === 'all' || input.includeIncompleteLeads) && state.errorRowsPushed < 100) {
+                    state.errorRowsPushed += 1;
+                    await Actor.pushData(buildRow(lead, input));
+                } else {
+                    log.info(`@${lead.username}: could not be verified (Instagram blocked, no store found) `
+                        + '- not saved under the current "Which businesses to keep" setting');
+                }
             }
             return;
         }
@@ -217,7 +226,7 @@ async function finalizeLead(lead, { force = false } = {}) {
         counters.filteredOut[lead.filterReason] += 1;
         return;
     }
-    if (state.pushedCount >= input.maxResults) return;
+    if (state.pushedCount >= input.maxResults || state.chargeLimitReached) return;
 
     const row = buildRow(lead, input);
     const rejectedBy = filterRow(row, input);
@@ -282,7 +291,14 @@ async function finalizeLead(lead, { force = false } = {}) {
     // platform sets ACTOR_MAX_TOTAL_CHARGE_USD only on pay-per-event runs).
     if (process.env.ACTOR_MAX_TOTAL_CHARGE_USD) {
         try {
-            await Actor.charge({ eventName: row.publicEmail ? 'lead-with-email' : 'lead' });
+            const result = await Actor.charge({ eventName: row.publicEmail ? 'lead-with-email' : 'lead' });
+            if (result?.eventChargeLimitReached && !state.chargeLimitReached) {
+                // Stop collecting instead of silently giving away free leads;
+                // the user is told exactly why the run ended early.
+                state.chargeLimitReached = true;
+                log.warning(`Run spending limit reached after ${state.pushedCount} leads `
+                    + '- stopping collection. Increase "Maximum cost per run" to collect more.');
+            }
         } catch (error) {
             log.debug(`Charge event failed: ${error.message}`);
         }
@@ -375,7 +391,7 @@ async function expandDiscoveryFrom(crawler, lead, user) {
             && state.enqueuedProfiles < input.discoveryCap;
         if (shouldExpand) {
             state.expandedHashtags[tag] = true;
-            log.info(`Discovery expansion: several discovered brands use #${tag} — exploring it`);
+            log.info(`Discovery expansion: several discovered brands use #${tag} - exploring it`);
             await crawler.addRequests([hashtagRequest(tag)]);
         }
     }
@@ -405,7 +421,7 @@ async function handleSearch({ request, $, body, crawler, session, log: rlog }) {
         // a different exit node often gets real results.
         const title = $('title').first().text().replace(/\s+/g, ' ').trim().slice(0, 80);
         rlog.warning(`Search "${query}" (${engine}, page ${page}): no Instagram profiles in response `
-            + `(page title: "${title}", body: ${String(body).length} bytes) — retrying with a new session`);
+            + `(page title: "${title}", body: ${String(body).length} bytes) - retrying with a new session`);
         session?.retire();
         throw new Error(`Search results page from ${engine} contained no Instagram links (possible rate limit)`);
     }
@@ -433,7 +449,7 @@ async function enqueueStoreCheck(crawler, { domain, url }, source) {
     if (!domain || state.storeDomains[domain]) return false;
     if (input.excludedDomains.has(domain)) return false;
     if (state.enqueuedStores >= input.discoveryCap) return false;
-    if (state.pushedCount >= input.maxResults) return false;
+    if (state.pushedCount >= input.maxResults || state.chargeLimitReached) return false;
     state.storeDomains[domain] = true;
     state.enqueuedStores += 1;
     await crawler.addRequests([{
@@ -456,7 +472,7 @@ async function handleStoreSearch({ request, $, body, crawler, session, log: rlog
         }
         const title = $('title').first().text().replace(/\s+/g, ' ').trim().slice(0, 80);
         rlog.warning(`Store search "${query}" (${engine}, page ${page}): no store links in response `
-            + `(page title: "${title}", body: ${String(body).length} bytes) — retrying with a new session`);
+            + `(page title: "${title}", body: ${String(body).length} bytes) - retrying with a new session`);
         session?.retire();
         throw new Error(`Store search results from ${engine} contained no candidates (possible rate limit)`);
     }
@@ -505,11 +521,14 @@ async function handleStoreCheck({ request, response, $, body, crawler, log: rlog
         return;
     }
 
-    // Locate the store's Instagram account from its social links.
+    // Locate the store's Instagram account from its social links. Platform
+    // accounts are skipped: a "powered by Shopify" badge links to
+    // instagram.com/shopify, which is not the store's own account.
     let igUsername = null;
     $('a[href*="instagram.com"]').each((_, el) => {
         if (igUsername) return;
-        igUsername = usernameFromInstagramUrl(unwrapRedirectUrl($(el).attr('href') ?? '') ?? '');
+        const candidateUser = usernameFromInstagramUrl(unwrapRedirectUrl($(el).attr('href') ?? '') ?? '');
+        if (candidateUser && !PLATFORM_IG_ACCOUNTS.has(candidateUser)) igUsername = candidateUser;
     });
     if (igUsername && input.excludedUsernames.has(igUsername)) return;
 
@@ -565,7 +584,7 @@ async function handleStoreCheck({ request, response, $, body, crawler, log: rlog
     }
     if (platform.isShopify) markShopifyFound(lead);
     rlog.info(`${finalDomain}: ${platform.isShopify ? 'confirmed Shopify store' : `online store (${platform.platform})`}`
-        + ` → ${igUsername ? `@${igUsername}` : 'no Instagram link'}`);
+        + ` -> ${igUsername ? `@${igUsername}` : 'no Instagram link'}`);
 
     // Product-count probe (Shopify only) + contact page, same as forward.
     if (platform.isShopify || platform.inconclusiveShopify) {
@@ -649,7 +668,7 @@ async function handleHashtag({ request, json, crawler, log: rlog }) {
     const usernames = blocked ? [] : extractUsernamesFromHashtagResponse(json);
 
     if (!usernames.length) {
-        rlog.warning(`Hashtag #${hashtag}: ${blocked ? 'login wall' : 'no profiles'} — `
+        rlog.warning(`Hashtag #${hashtag}: ${blocked ? 'login wall' : 'no profiles'} - `
             + 'falling back to search-engine discovery');
         await crawler.addRequests(buildHashtagFallbackRequests(hashtag));
         return;
@@ -732,7 +751,7 @@ async function inspectWebsite({ request, response, $, body, crawler, log: rlog }
     if (service && depth < 2) {
         lead.bioLinkService = service;
         const links = extractOutboundLinks($, finalUrl, input.maxBioLinksToInspect);
-        rlog.info(`@${username}: ${service} page — ${links.length} business link(s) selected`);
+        rlog.info(`@${username}: ${service} page - ${links.length} business link(s) selected`);
         if (links.length) {
             trackLeadRequest(lead, links.length);
             await crawler.addRequests(links.map((link) => ({
@@ -922,8 +941,8 @@ const crawler = new CheerioCrawler({
     async statusMessageCallback(ctx) {
         if (ctx.message) log.info(`Crawler status: ${ctx.message}`);
         return ctx.crawler.setStatusMessage(
-            `Saved ${state.pushedCount}/${input.maxResults} leads · ${counters.profilesDiscovered} profiles discovered `
-            + `· ${counters.profilesProcessed} analyzed · ${counters.shopifyStoresFound} Shopify stores found`,
+            `Saved ${state.pushedCount}/${input.maxResults} leads | ${counters.profilesDiscovered} profiles discovered `
+            + `| ${counters.profilesProcessed} analyzed | ${counters.shopifyStoresFound} Shopify stores found`,
         );
     },
 
@@ -984,7 +1003,7 @@ const crawler = new CheerioCrawler({
         if (label === LABELS.PROFILE && lead && !lead.profile) {
             // API blocked — recover via the plain HTML page instead of
             // counting this as a failure (the lead is still in play).
-            log.info(`@${username}: profile API blocked (${error.message.split('\n')[0]}) — using HTML fallback`);
+            log.info(`@${username}: profile API blocked (${error.message.split('\n')[0]}) - using HTML fallback`);
             await c.addRequests([{
                 url: IG_PROFILE_URL(username),
                 label: LABELS.PROFILE_HTML,
@@ -995,13 +1014,13 @@ const crawler = new CheerioCrawler({
         }
         if (label === LABELS.GOOGLE_SEARCH) {
             log.warning(`Google Custom Search request failed (${error.message.split('\n')[0]}) `
-                + '— check the API key and daily quota. Free engines continue.');
+                + '- check the API key and daily quota. Free engines continue.');
             return;
         }
         if (label === LABELS.TOPSEARCH) {
             // Expected degradation on login-walled IP pools — search
             // engines remain the discovery backbone.
-            log.info(`Instagram keyword search unavailable (${error.message.split('\n')[0]}) — relying on search engines`);
+            log.info(`Instagram keyword search unavailable (${error.message.split('\n')[0]}) - relying on search engines`);
             return;
         }
         counters.failedRequests += 1;
@@ -1035,7 +1054,7 @@ const crawler = new CheerioCrawler({
             return;
         }
         // SEARCH / HASHTAG failures are non-fatal.
-        log.debug(`Request failed (${label}): ${request.url} — ${error.message}`);
+        log.debug(`Request failed (${label}): ${request.url} - ${error.message}`);
     },
 });
 
@@ -1060,7 +1079,7 @@ await crawler.run(initialRequests);
 
 // Safety net: finalize any lead still open (e.g. its requests were dropped
 // by the crawl-size cap). Normally everything is already pushed by now.
-log.info('Crawl finished — finalizing remaining leads…');
+log.info('Crawl finished - finalizing remaining leads...');
 for (const lead of Object.values(state.leads)) {
     await finalizeLead(lead, { force: true });
 }
@@ -1082,12 +1101,13 @@ const summary = {
     storesWithoutInstagram: counters.storesWithoutInstagram,
     incompleteLeadsSkipped: counters.incompleteLeadsSkipped,
     discoveryMode: input.discoveryMode,
+    chargeLimitReached: state.chargeLimitReached,
     filteredOut: counters.filteredOut,
 };
 await Actor.setValue(RUN_SUMMARY_KEY, summary);
 await persistHistory();
 
-log.info('──────────────── RUN SUMMARY ────────────────');
+log.info('================ RUN SUMMARY ================');
 log.info(`Profiles discovered:   ${summary.profilesDiscovered}`);
 log.info(`Profiles processed:    ${summary.profilesProcessed}`);
 log.info(`Profiles skipped:      ${summary.profilesSkipped}`);
@@ -1096,7 +1116,8 @@ if (summary.storeCandidatesChecked > 0) {
     log.info(`Store candidates:      ${summary.storeCandidatesChecked} checked, `
         + `${summary.storeCandidatesRejected} not online stores, `
         + `${summary.storeCandidatesOffTopic} off-topic for the niche, `
-        + `${summary.storesWithoutInstagram} kept as store-only leads (no Instagram link)`);
+        + `${summary.storesWithoutInstagram} without an Instagram link`
+        + `${input.requireInstagram ? ' (skipped: Instagram required)' : ' (kept as store-only leads)'}`);
 }
 if (summary.incompleteLeadsSkipped > 0) {
     log.info(`Incomplete leads:      ${summary.incompleteLeadsSkipped} skipped `
@@ -1109,14 +1130,18 @@ log.info(`High-quality leads:    ${summary.highQualityLeads}`);
 log.info(`Duplicates removed:    ${summary.duplicatesRemoved}`);
 log.info(`Failed requests:       ${summary.failedRequests}`);
 log.info(`Filtered out:          ${JSON.stringify(summary.filteredOut)}`);
-log.info('─────────────────────────────────────────────');
+log.info('=============================================');
 
-const quotaNote = summary.leadsSaved < input.maxResults
-    ? ` (requested ${input.maxResults}; the log's filtered-out breakdown explains why fewer matched)`
-    : '';
+let quotaNote = '';
+if (state.chargeLimitReached) {
+    quotaNote = ` (stopped at this run's spending limit; increase "Maximum cost per run" to collect more)`;
+} else if (summary.leadsSaved < input.maxResults) {
+    quotaNote = ` of ${input.maxResults} requested (discovery ran dry for this niche;`
+        + ' add search terms or seed usernames, or loosen "Which businesses to keep")';
+}
 await Actor.setStatusMessage(
-    `Done: ${summary.leadsSaved} leads saved${quotaNote} · ${summary.leadsWithEmail} with email `
-    + `· ${summary.shopifyStoresFound} Shopify stores`,
+    `Done: ${summary.leadsSaved} leads saved${quotaNote} | ${summary.leadsWithEmail} with email `
+    + `| ${summary.shopifyStoresFound} Shopify stores`,
     { isStatusMessageTerminal: true },
 );
 

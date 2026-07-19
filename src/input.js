@@ -52,12 +52,17 @@ export function parseInput(raw) {
 
     const maxResults = clamp(input.maxResults, 1, 5000, 10);
 
-    // Which businesses to keep: every business found, only confirmed
-    // Shopify stores, or only businesses with an Instagram account.
-    const validLeadTypes = ['all', 'shopify', 'instagram'];
-    const leadType = validLeadTypes.includes(input.leadType) ? input.leadType : 'all';
-    const requireShopify = leadType === 'shopify' || input.requireShopify === true;
-    const requireInstagram = leadType === 'instagram';
+    // Which businesses to keep:
+    //  - shopify-instagram (default): verified Shopify store AND a matched
+    //    Instagram account — the core promise of this Actor
+    //  - instagram: must have Instagram, any (or no) store platform
+    //  - shopify: must be a verified Shopify store, Instagram optional
+    //  - all: keep every business found
+    const validLeadTypes = ['shopify-instagram', 'instagram', 'shopify', 'all'];
+    const leadType = validLeadTypes.includes(input.leadType) ? input.leadType : 'shopify-instagram';
+    const requireShopify = leadType === 'shopify' || leadType === 'shopify-instagram'
+        || input.requireShopify === true;
+    const requireInstagram = leadType === 'instagram' || leadType === 'shopify-instagram';
 
     // Discover more profiles than requested leads because filters
     // (followers, Shopify-only, …) will drop a share of them. Shopify-only
@@ -74,8 +79,11 @@ export function parseInput(raw) {
     //    otherwise both.
     const validModes = ['auto', 'shopify-first', 'instagram-first', 'both'];
     const modeChoice = validModes.includes(input.discoveryMode) ? input.discoveryMode : 'auto';
+    // Auto: pure store-first only when Instagram is NOT required (store-first
+    // alone serves Shopify-only perfectly); otherwise run both pipelines so
+    // Instagram-side discovery contributes candidates too.
     const discoveryMode = modeChoice === 'auto'
-        ? (requireShopify ? 'shopify-first' : 'both')
+        ? (requireShopify && !requireInstagram ? 'shopify-first' : 'both')
         : modeChoice;
 
     return {
