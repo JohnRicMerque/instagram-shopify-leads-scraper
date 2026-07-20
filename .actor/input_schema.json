@@ -8,7 +8,7 @@
             "title": "Search terms (niche keywords)",
             "type": "array",
             "editor": "stringList",
-            "description": "Niche keywords used to discover Instagram business profiles, e.g. <b>skincare</b>, <b>streetwear</b>, <b>handmade jewelry</b>. Discovery automatically expands beyond literal name matches: it also tries commerce variants of each term, profiles Instagram suggests as related, and hashtags the discovered brands actually use.",
+            "description": "Niche keywords used to discover Instagram business profiles, e.g. <b>skincare</b>, <b>streetwear</b>, <b>handmade jewelry</b>. Discovery automatically expands beyond literal name matches: it also tries commerce variants of each term, profiles Instagram suggests as related, and hashtags the discovered brands actually use. For best results, also add a few seed usernames below.",
             "prefill": ["skincare"]
         },
         "locations": {
@@ -24,10 +24,10 @@
             "description": "Instagram hashtags to discover profiles from, with or without the leading #, e.g. <b>skincarebrand</b>."
         },
         "usernames": {
-            "title": "Instagram usernames (optional)",
+            "title": "Instagram usernames (highly recommended)",
             "type": "array",
             "editor": "stringList",
-            "description": "Specific Instagram usernames to process directly, with or without the leading @. Also the best way to seed discovery: add 2-3 brands you like and the Actor finds similar ones via Instagram's own suggestions.",
+            "description": "<b>Highly recommended for the best results.</b> Add 2-3 Instagram usernames of brands you already like in this niche (with or without the leading @) and the Actor uses them as seeds to find similar accounts via Instagram's own suggestions, on top of anything search terms find. This consistently surfaces better, less obvious matches than keywords alone, and works even without search terms.",
             "prefill": ["glowrecipe", "cocokind"]
         },
         "startUrls": {

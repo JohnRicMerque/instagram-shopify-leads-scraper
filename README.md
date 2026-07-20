@@ -17,7 +17,7 @@ By default every lead is a **verified Shopify store with a matched Instagram acc
 
 ## How to use
 
-1. Enter **search terms** (e.g. `skincare`, `handmade jewelry`), optionally with locations. Hashtags, usernames, or profile URLs work too.
+1. Enter **search terms** (e.g. `skincare`, `handmade jewelry`), optionally with locations. Also add 2–3 **Instagram usernames** of brands you like, highly recommended, the Actor uses them to find similar brands. Hashtags or profile URLs work too.
 2. Pick **how many leads to collect** and **which businesses to keep** (default: Shopify stores that have Instagram).
 3. Run. Export from the dataset when done (or while it runs).
 
@@ -25,14 +25,14 @@ By default every lead is a **verified Shopify store with a matched Instagram acc
 
 - **Which businesses to keep** (main form): **Shopify stores that have Instagram** (default) returns the fewest but best leads; every row is a verified store you can also reach through DMs. **Has Instagram** adds businesses on other platforms or with no store yet, ideal if you sell web services. **Verified Shopify store** adds stores without an Instagram link and uses the faster store-first discovery. **All businesses** returns the most rows and lets you filter the dataset yourself. Rule of thumb: stricter choice = fewer, better leads; looser choice = more rows to sift.
 - **Only new leads**: repeat runs skip everything you already exported. Ideal for weekly prospecting. **Reset lead memory** starts the memory over. Both are checkboxes in the **Filters** section of the input form.
-- **Seed usernames**: add 2–3 Instagram accounts of brands you like into the **Instagram usernames** field on the main form, and the Actor finds similar brands via Instagram's own suggestions.
+- **Seed usernames (highly recommended)**: add 2–3 Instagram accounts of brands you like into the **Instagram usernames** field on the main form. The Actor uses them to find similar brands via Instagram's own suggestions, which consistently turns up better, less obvious matches than keywords alone, on top of whatever search terms find. Works even without search terms.
 - **Google API key**: plug your own free Google Custom Search key and engine ID into the **Google API key** and **Google search engine ID** fields in the **Advanced** section for deeper, more stable discovery. The field descriptions link to where you create both.
 - **Proxies**: keep the default residential proxy, preset in **Proxy configuration** at the bottom of the **Advanced** section. Instagram blocks most datacenter IPs; on those the Actor continues with reduced profile data. To keep costs low, residential IPs are only used where they are needed (Instagram and search engines); ordinary store pages are fetched through cheap datacenter IPs automatically.
 - **Instagram cookies** (optional): paste a throwaway account's session cookie into **Instagram session cookies** in the **Advanced** section to improve Instagram coverage. Never required.
 
 ## Input
 
-Only one discovery source is required: search terms, hashtags, usernames, or profile URLs. Everything else has working defaults.
+Only one discovery source is required: search terms, hashtags, usernames, or profile URLs. Everything else has working defaults. Adding a few seed `usernames` alongside your search terms is highly recommended, it is the single best lever for lead quality.
 
 ```json
 {
