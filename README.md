@@ -66,7 +66,7 @@ Only one discovery source is required: search terms, hashtags, usernames, or pro
     "usernames": ["examplebrand"],
     "hashtags": ["skincarebrand"],
     "startUrls": [{ "url": "https://www.instagram.com/examplebrand/" }],
-    "maxResults": 10,
+    "maxResults": 5,
     "leadType": "shopify-instagram",
     "onlyActiveProfiles": false,
     "requireEmail": false,

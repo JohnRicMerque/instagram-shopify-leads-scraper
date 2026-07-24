@@ -40,8 +40,8 @@
             "title": "Leads to collect",
             "type": "integer",
             "description": "The run stops as soon as this many leads have been saved to the dataset. Discovery keeps searching (more result pages, related profiles, hashtags) until this target is reached or sources are exhausted. Start small to preview results, then scale up.",
-            "default": 10,
-            "prefill": 10,
+            "default": 5,
+            "prefill": 5,
             "minimum": 1,
             "maximum": 5000
         },

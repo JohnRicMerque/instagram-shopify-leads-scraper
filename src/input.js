@@ -50,7 +50,7 @@ export function parseInput(raw) {
         cleanStringArray(input.excludedDomains).map((d) => normalizeDomain(d)).filter(Boolean),
     );
 
-    const maxResults = clamp(input.maxResults, 1, 5000, 10);
+    const maxResults = clamp(input.maxResults, 1, 5000, 5);
 
     // Which businesses to keep:
     //  - shopify-instagram (default): verified Shopify store AND a matched
